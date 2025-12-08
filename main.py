@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Query, Path, HTTPException
-import json
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, computed_field
 from typing import Annotated ,Literal
 
 class Patient(BaseModel):
-    id : Annotated[str, Field(..., description='id of the patient', examples='P001')]
+    id : Annotated[str, Field(..., description='id of the patient', examples=['P001'])]
     name : Annotated[str, Field(..., description='Name of the patient')]
     city : Annotated[str, Field(..., description='name of the city' )]
     age : Annotated[int, Field(..., gt=0, lt=120, description='age of the patient between 0-120')]
@@ -78,3 +78,4 @@ def create_patient(patient : Patient):
     
     data[patient.id] = patient.model_dump(exclude=['id'])
     save_data(data)
+    return JSONResponse(status_code=201, content={'message':'patient created'})

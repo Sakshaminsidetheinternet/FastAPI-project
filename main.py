@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Query, Path, HTTPException
+#import json
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, computed_field
-from typing import Annotated ,Literal
+from typing import Annotated ,Literal ,Optional
 
 class Patient(BaseModel):
-    id : Annotated[str, Field(..., description='id of the patient', examples=['P001'])]
+    id : Annotated[str, Field(..., description='id of the patient', examples='P001')]
     name : Annotated[str, Field(..., description='Name of the patient')]
     city : Annotated[str, Field(..., description='name of the city' )]
     age : Annotated[int, Field(..., gt=0, lt=120, description='age of the patient between 0-120')]
@@ -12,6 +13,9 @@ class Patient(BaseModel):
 
     height : Annotated[float, Field(...,description='height of the patient', gt=0)]
     weight : Annotated[float, Field(...,description='weight of the patient', gt=0)]
+
+
+   
     @computed_field
     @property
     def bmi(self) -> float:
@@ -27,7 +31,18 @@ class Patient(BaseModel):
             return 'normal' 
         else:
             return 'obese'
-        
+
+class Patientupdate(BaseModel):
+    
+    name : Annotated[Optional[str], Field(default=None)]
+    city : Annotated[Optional[str], Field(default=None)]
+    age : Annotated[Optional[int], Field(default=None, gt=0)]
+    gender : Annotated[Optional[Literal['male', 'female', 'others']], Field(default=None)]
+
+    height : Annotated[Optional[float], Field(default=None, gt=0)]
+    weight : Annotated[Optional[float], Field(default=None, gt=0)]
+
+
 app = FastAPI()
 
 def load_data():
@@ -79,3 +94,17 @@ def create_patient(patient : Patient):
     data[patient.id] = patient.model_dump(exclude=['id'])
     save_data(data)
     return JSONResponse(status_code=201, content={'message':'patient created'})
+
+@app.post('/update{patient_id}')
+def update_patient(patient_id : str, patient_updated: Patientupdate ):
+    data = load_data()
+    existing_info = data[patient_id]
+    updated_info = patient_updated.model_dump(exclude_unset=True)
+    for key, value in update_patient:
+        existing_info[key] = value
+    existing_info['id'] = patient_id
+    object_infoo = Patient(**existing_info)
+    existing_info = object_infoo.model_dump(exclude='id')
+    data[patient_id] = existing_info
+    save_data(data)
+    return JSONResponse(status_code=200, content='message: patient updated')
